@@ -31,9 +31,14 @@ abstract class Form extends Model
                 ['terms'],
                 'compare',
                 'compareValue' => '1',
-                'message' => Yii::t('forms', 'FORM_TERMS_ERROR'),
+                'message' => $this->getTermsErrorMessage(),
             ],
         ] : [];
+    }
+
+    protected function getTermsErrorMessage(): string
+    {
+        return Yii::t('forms', 'FORM_TERMS_ERROR');
     }
 
     #[Override]

@@ -10,8 +10,8 @@ protection and the TypeScript that submits them. Fields, mail views and markup s
 composer require davidhirtz/yii2-forms
 ```
 
-The bundle bootstraps itself (`Hirtz\Forms\Bootstrap`): the `botProtection` component, the `forms` message category
-and the bot protection's consent service in the required category.
+The bundle bootstraps itself (`Hirtz\Forms\Bootstrap`): the `botProtection` and `newsletter` components, the `forms`
+message category and the bot protection's consent service in the required category.
 
 ## Forms
 
@@ -59,6 +59,34 @@ a CSRF token, so the page holding the form can be cached:
 
 It answers `{status: 200, message}`, or `{status: 422, message, errors}` with status 422. A project controller can
 use `Actions\SubmitAction` itself, with `SameOriginFilter` in its behaviors.
+
+## Newsletter
+
+`Models\NewsletterForm` subscribes its `email` through the `newsletter` component's provider. An address already on
+the list answers like a new one, so the form never reveals who is subscribed; without a provider the form answers that
+the newsletter is unavailable. A subclass adds fields and hands them to the provider through
+`getSubscriptionAttributes()`.
+
+```php
+'forms' => ['contact' => ContactForm::class, 'newsletter' => NewsletterForm::class],
+```
+
+The provider comes from params:
+
+- `Newsletter\Brevo`, from `params.brevoApiKey`, `params.brevoListId` (comma-separated for several) and
+  `params.brevoTemplateId` (or one per language, `['de' => 8, 'en-US' => 9]`): Brevo's double opt-in. The confirmation
+  link leads to `redirectUrl`, the home page unless the container says otherwise:
+  `'container' => ['definitions' => [Brevo::class => ['redirectUrl' => ['/cms/site/view', 'slug' => 'subscribed']]]]`.
+- `Newsletter\Webhook`, from `params.newsletterWebhookUrl`: posts `email`, `language`, `ip`, `url` (the page of the
+  form) and the attributes as JSON to an automation (Zoho Flow, Make, Zapier, n8n), which runs the opt-in.
+
+A project replaces the provider with a closure; another service implements `Newsletter\ProviderInterface`:
+
+```php
+'newsletter' => [
+    'provider' => fn (): ProviderInterface => new Webhook(['url' => '…', 'headers' => ['Authorization' => '…']]),
+],
+```
 
 ## Bot protection
 

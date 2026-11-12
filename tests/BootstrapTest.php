@@ -8,6 +8,9 @@ use Hirtz\Forms\BotProtection\BotProtection;
 use Hirtz\Forms\BotProtection\Honeypot;
 use Hirtz\Forms\BotProtection\ProtectionInterface;
 use Hirtz\Forms\BotProtection\Turnstile;
+use Hirtz\Forms\Newsletter\Brevo;
+use Hirtz\Forms\Newsletter\Newsletter;
+use Hirtz\Forms\Newsletter\Webhook;
 use Hirtz\Skeleton\Consent\ConsentManager;
 use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Test\TestCase;
@@ -15,9 +18,48 @@ use Yii;
 
 class BootstrapTest extends TestCase
 {
-    public function testTheSecretKeyIsASensitiveParam(): void
+    public function testTheSecretsAreSensitiveParams(): void
     {
         self::assertContains('cfTurnstileSecretKey', Yii::$app->sensitiveParams);
+        self::assertContains('brevoApiKey', Yii::$app->sensitiveParams);
+        self::assertContains('newsletterWebhookUrl', Yii::$app->sensitiveParams);
+    }
+
+    public function testWithoutParamsTheNewsletterHasNoProvider(): void
+    {
+        self::assertNull(Newsletter::current()->getProvider());
+    }
+
+    public function testTheBrevoParamsWireBrevoBeforeTheWebhook(): void
+    {
+        $this->config['params'] = [
+            ...$this->config['params'] ?? [],
+            'brevoApiKey' => 'api-key',
+            'brevoListId' => '3,5',
+            'brevoTemplateId' => 7,
+            'newsletterWebhookUrl' => 'https://flow.example.com/webhook',
+        ];
+
+        $this->config['container']['definitions'][Brevo::class] = ['redirectUrl' => ['/subscribed']];
+        $this->reloadApplication();
+
+        $provider = Newsletter::current()->getProvider();
+        self::assertInstanceOf(Brevo::class, $provider);
+        self::assertSame([3, 5], $provider->listIds);
+        self::assertSame(7, $provider->templateId);
+        self::assertSame(['/subscribed'], $provider->redirectUrl);
+    }
+
+    public function testTheWebhookParamWiresTheWebhook(): void
+    {
+        $this->config['params'] = [
+            ...$this->config['params'] ?? [],
+            'newsletterWebhookUrl' => 'https://flow.example.com/webhook',
+        ];
+
+        $this->reloadApplication();
+
+        self::assertInstanceOf(Webhook::class, Newsletter::current()->getProvider());
     }
 
     public function testWithoutParamsOnlyTheHoneypotIsWired(): void
