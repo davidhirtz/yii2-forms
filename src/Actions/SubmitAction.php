@@ -27,8 +27,7 @@ class SubmitAction extends Action
         $request = Application::current()->getRequest();
         $response = Application::current()->getResponse();
 
-        $post = $request->post();
-        $isSent = is_array($post) && $form->load($post) && $form->validate() && $form->submit();
+        $isSent = $form->load($request->post()) && $form->validate() && $form->submit();
 
         $response->format = Response::FORMAT_JSON;
         $response->setStatusCode($isSent ? 200 : 422);
