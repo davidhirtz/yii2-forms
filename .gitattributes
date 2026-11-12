@@ -1,0 +1,12 @@
+/.gitattributes export-ignore
+/.github/ export-ignore
+/.gitignore export-ignore
+/README.md export-ignore
+/composer.lock export-ignore
+/phpstan.neon export-ignore
+/phpunit.xml export-ignore
+/tests/ export-ignore
+/node_modules/ export-ignore
+/package.json export-ignore
+/package-lock.json export-ignore
+/tsconfig.json export-ignore
