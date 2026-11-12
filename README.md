@@ -101,4 +101,5 @@ message as HTML, errors as text), sets `aria-invalid` on the fields named in the
   when it needs the visitor).
 - `turnstile/onFocus.ts`: loads and renders Turnstile on the form's first `focusin`.
 
-Both find the widget's container as `[data-turnstile]` inside the form.
+Both find the widget's container as `[data-turnstile]` inside the form and take Turnstile's render options
+(`turnstile({language: 'de', theme: 'light'})`), except the ones they set themselves.

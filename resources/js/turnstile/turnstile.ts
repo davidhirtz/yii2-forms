@@ -16,9 +16,14 @@ interface TurnstileApi {
 const getTurnstile = (): TurnstileApi => (window as unknown as {turnstile: TurnstileApi}).turnstile;
 
 /**
+ * Render options a project may set, such as `language`, `theme` or `size`.
+ */
+export type TurnstileOptions = Record<string, unknown>;
+
+/**
  * The widget a form's `[data-turnstile]` container holds, rendered on the first `load()`.
  */
-export const createWidget = ($form: HTMLFormElement, execution: 'render' | 'execute') => {
+export const createWidget = ($form: HTMLFormElement, execution: 'render' | 'execute', options: TurnstileOptions = {}) => {
     const $container = $form.querySelector<HTMLElement>('[data-turnstile]');
 
     let widgetId: string | null | undefined;
@@ -43,9 +48,10 @@ export const createWidget = ($form: HTMLFormElement, execution: 'render' | 'exec
 
         return ('turnstile' in window ? Promise.resolve() : loadScript(SCRIPT_URL)).then(() => {
             widgetId ??= getTurnstile().render($container, {
+                appearance: execution === 'execute' ? 'interaction-only' : 'always',
+                ...options,
                 sitekey: $container.dataset.sitekey!,
                 execution,
-                appearance: execution === 'execute' ? 'interaction-only' : 'always',
                 'response-field': false,
                 callback: (value: string) => settle(value),
                 'error-callback': () => settle(new Error('Turnstile could not verify the visitor.')),

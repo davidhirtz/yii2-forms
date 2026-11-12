@@ -1,11 +1,11 @@
 import type {Challenge} from '../form.ts';
-import {createWidget} from './turnstile.ts';
+import {createWidget, type TurnstileOptions} from './turnstile.ts';
 
 /**
  * Loads and renders Turnstile when the visitor first focuses the form, so the token is usually ready by submit.
  */
-export default (): Challenge => ($form) => {
-    const {load, challenge} = createWidget($form, 'render');
+export default (options: TurnstileOptions = {}): Challenge => ($form) => {
+    const {load, challenge} = createWidget($form, 'render', options);
 
     $form.addEventListener('focusin', () => void load(), {once: true});
 

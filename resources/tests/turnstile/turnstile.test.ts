@@ -59,6 +59,14 @@ describe('turnstile', () => {
         expect(api.execute).not.toHaveBeenCalled();
     });
 
+    it('passes the project\'s render options without letting them replace its own', async () => {
+        const challenge = onSubmit({language: 'de', theme: 'light', execution: 'render', sitekey: 'other'})($form);
+        void challenge.solve();
+
+        await vi.waitFor(() => expect(api.render).toHaveBeenCalled());
+        expect(options).toMatchObject({language: 'de', theme: 'light', execution: 'execute', sitekey: 'site-key'});
+    });
+
     it('rejects when Turnstile reports an error', async () => {
         const challenge = onSubmit()($form);
         const fields = challenge.solve();
