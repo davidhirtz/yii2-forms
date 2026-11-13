@@ -23,8 +23,7 @@ class NewsletterForm extends Form
             ...parent::rules(),
             [
                 ['email'],
-                'filter',
-                'filter' => fn (mixed $value): mixed => is_string($value) ? trim($value) : $value,
+                'trim',
             ],
             [
                 ['email'],

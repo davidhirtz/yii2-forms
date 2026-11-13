@@ -7,6 +7,7 @@ namespace Hirtz\Forms\Tests;
 use Hirtz\Forms\BotProtection\BotProtection;
 use Hirtz\Forms\BotProtection\Honeypot;
 use Hirtz\Forms\BotProtection\ProtectionInterface;
+use Hirtz\Forms\BotProtection\RateLimit;
 use Hirtz\Forms\BotProtection\Turnstile;
 use Hirtz\Forms\Newsletter\Brevo;
 use Hirtz\Forms\Newsletter\Mailchimp;
@@ -82,9 +83,9 @@ class BootstrapTest extends TestCase
         self::assertInstanceOf(Webhook::class, Newsletter::current()->getProvider());
     }
 
-    public function testWithoutParamsOnlyTheHoneypotIsWired(): void
+    public function testWithoutParamsTheHoneypotAndTheRateLimitAreWired(): void
     {
-        self::assertSame([Honeypot::class], $this->getProtectionClasses());
+        self::assertSame([Honeypot::class, RateLimit::class], $this->getProtectionClasses());
         self::assertSame(['Cookie settings'], $this->getRequiredServiceNames());
     }
 
@@ -98,7 +99,7 @@ class BootstrapTest extends TestCase
 
         $this->reloadApplication();
 
-        self::assertSame([Honeypot::class, Turnstile::class], $this->getProtectionClasses());
+        self::assertSame([Honeypot::class, RateLimit::class, Turnstile::class], $this->getProtectionClasses());
         self::assertSame(['Cookie settings', 'Cloudflare Turnstile'], $this->getRequiredServiceNames());
     }
 
@@ -110,10 +111,23 @@ class BootstrapTest extends TestCase
             'cfTurnstileSecretKey' => 'secret-key',
         ];
 
-        $this->config['components']['botProtection']['protections'] = fn (): array => [new Honeypot(minSeconds: 0)];
+        $this->config['components']['botProtection']['protections'] = [new Honeypot(minSeconds: 0)];
         $this->reloadApplication();
 
         self::assertSame([Honeypot::class], $this->getProtectionClasses());
+    }
+
+    public function testAProjectTurnsTheNewsletterOff(): void
+    {
+        $this->config['params'] = [
+            ...$this->config['params'] ?? [],
+            'newsletterWebhookUrl' => 'https://flow.example.com/webhook',
+        ];
+
+        $this->config['components']['newsletter']['provider'] = false;
+        $this->reloadApplication();
+
+        self::assertNull(Newsletter::current()->getProvider());
     }
 
     /**

@@ -7,8 +7,6 @@ namespace Hirtz\Forms\Newsletter;
 trait LanguageMapTrait
 {
     /**
-     * Picks `en-US`, then `en`, then the first entry.
-     *
      * @template T of int|string
      * @param T|array<string, T> $value
      * @return T

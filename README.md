@@ -16,9 +16,12 @@ message category and the bot protection's consent service in the required catego
 ## Forms
 
 A form extends `Models\Form` (`submit()`, `getSuccessMessage()`; `terms` must be ticked unless `requiresTerms()`
-answers `false`) or `Models\MailForm`, which sends itself to `to` (default `params.formEmail`, then `params.email`; a
-comma-separated list is fine) from `from` (`params.email`) with the visitor's `email` as reply-to. The mail view gets
-the form as `$form`.
+answers `false`) or `Models\MailForm`, which sends `viewFile` with `subject` to `to` (default `params.formEmail`,
+then `params.email`; a comma-separated list is fine) from `from` (`params.email`) with the visitor's `email`, when
+valid, as reply-to. These four are no attributes, so a post never sets them, and no form field may take their names. The mail
+view gets the form as `$form` and encodes what it prints.
+
+The success message is HTML (`form.ts` shows it as such): encode what the visitor entered.
 
 ```php
 class ContactForm extends MailForm
@@ -40,7 +43,7 @@ class ContactForm extends MailForm
 
     public function getSuccessMessage(): string
     {
-        return Yii::t('app', 'CONTACT_FORM_SUCCESS_TEXT');
+        return Yii::t('app', 'CONTACT_FORM_SUCCESS_TEXT', ['name' => Html::encode($this->name)]);
     }
 }
 ```
@@ -78,13 +81,14 @@ The provider comes from params, in this order:
   link leads to `redirectUrl`, the home page unless the container says otherwise:
   `'container' => ['definitions' => [Brevo::class => ['redirectUrl' => ['/cms/site/view', 'slug' => 'subscribed']]]]`.
 - `Newsletter\Mailchimp`, from `params.mailchimpApiKey` and `params.mailchimpListId` (or one per language,
-  `params.mailchimpListId_de`, `params.mailchimpListId_en`): the member is `pending` until it confirms Mailchimp's
-  double opt-in, unless the container sets `doubleOptIn` to `false`. The data center comes from the key's suffix or
-  `params.mailchimpServer`. The form's attributes become merge fields (`FNAME`).
+  `params.mailchimpListId_de`, `params.mailchimpListId_en`): the member is `pending` until it confirms Mailchimp's double opt-in, unless the
+  container sets `doubleOptIn` to `false`. The data center comes from the key's suffix or `params.mailchimpServer`. The
+  form's attributes become merge fields (`FNAME`) of a new member; an existing one is left as it is.
 - `Newsletter\Webhook`, from `params.newsletterWebhookUrl`: posts `email`, `language`, `ip`, `url` (the page of the
   form) and the attributes as JSON to an automation (Zoho Flow, Make, Zapier, n8n), which runs the opt-in.
 
-A project replaces the provider with a closure; another service implements `Newsletter\ProviderInterface`:
+A project replaces the provider (`false` turns the newsletter off); another service implements
+`Newsletter\ProviderInterface`:
 
 ```php
 'newsletter' => [
@@ -95,18 +99,21 @@ A project replaces the provider with a closure; another service implements `News
 ## Bot protection
 
 `botProtection` checks every submit after the form's own rules pass; every protection in its list must agree.
-Without configuration the list is `Honeypot`, plus `Turnstile` when `params.cfTurnstileSiteKey` and
+Without configuration the list is `Honeypot` and `RateLimit`, plus `Turnstile` when `params.cfTurnstileSiteKey` and
 `params.cfTurnstileSecretKey` are set. The form renders the protections' markup with
-`BotProtection::current()->render()`. A project replaces the list with a closure (an array would be appended to):
+`BotProtection::current()->render()`. A project replaces the list, or overrides `getDefaultProtections()`:
 
 ```php
 'botProtection' => [
-    'protections' => fn (): array => [new Honeypot(minSeconds: 5)],
+    'protections' => [new Honeypot(minSeconds: 5, maxSeconds: 86400), new RateLimit(limit: 5)],
 ],
 ```
 
-- `BotProtection\Honeypot`: a field that must stay empty and a signed render time a submit must not follow within
-  `minSeconds`. No third party.
+- `BotProtection\Honeypot`: a field that must stay empty (`website`, so no form may have a field of that name) and a
+  signed render time a submit must not follow within `minSeconds`, nor, when set, after `maxSeconds`. On a cached
+  page the time is the cache's, so `maxSeconds` must outlast the page cache. No third party.
+- `BotProtection\RateLimit`: `limit` submits per IP address (an IPv6 /64) within `duration` seconds, across all forms,
+  counted in the `cache` component.
 - `BotProtection\Turnstile`: Cloudflare Turnstile, failing closed when Cloudflare cannot be reached. Registers its
   consent service.
 

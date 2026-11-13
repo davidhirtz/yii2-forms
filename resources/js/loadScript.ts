@@ -1,8 +1,5 @@
 const loaded = new Map<string, Promise<void>>();
 
-/**
- * Loads a script once per page, however many forms ask for it.
- */
 export default (src: string): Promise<void> => {
     let promise = loaded.get(src);
 

@@ -10,9 +10,6 @@ use Yii;
 use yii\base\Action;
 use yii\web\Response;
 
-/**
- * Answers JSON: `{status, message}` with 200 or `{status, message, errors}` with 422.
- */
 class SubmitAction extends Action
 {
     /**

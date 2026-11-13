@@ -8,6 +8,7 @@ use Hirtz\Forms\BotProtection\ProtectionInterface;
 use Hirtz\Forms\Controllers\FormController;
 use Hirtz\Forms\Models\MailForm;
 use Hirtz\Skeleton\Consent\Service;
+use Hirtz\Skeleton\Helpers\Html;
 use Hirtz\Skeleton\Test\TestCase;
 use Hirtz\Skeleton\Web\Application;
 use Hirtz\Skeleton\Web\Request;
@@ -55,6 +56,37 @@ class FormControllerTest extends TestCase
         self::assertSame(['asa@example.com'], array_keys($message->getReplyTo()));
         self::assertSame('Contact', $message->getSubject());
         self::assertStringContainsString('Message from Åsa Müller: Привет 👋', $this->mailer->getLastMessageBody());
+    }
+
+    public function testThePostCannotChangeTheMailSettings(): void
+    {
+        $this->submit([
+            'name' => 'Åsa',
+            'email' => 'asa@example.com',
+            'terms' => '1',
+            'to' => 'victim@example.com',
+            'subject' => 'Spam',
+            'viewFile' => '@app/views/secret',
+        ]);
+
+        $message = $this->mailer->getLastMessage();
+        self::assertNotNull($message);
+        self::assertSame(['office@example.com', 'team@example.com'], array_keys($message->getTo()));
+        self::assertSame('Contact', $message->getSubject());
+    }
+
+    public function testTheMailSettingsAreNoAttributes(): void
+    {
+        self::assertEqualsCanonicalizing(['terms', 'name', 'email', 'message'], (new ContactForm())->attributes());
+    }
+
+    public function testAnInvalidEmailIsNoReplyTo(): void
+    {
+        $form = new ContactForm(['email' => 'no-email']);
+        self::assertNull($form->getReplyTo());
+
+        $form->email = 'asa@example.com';
+        self::assertSame('asa@example.com', $form->getReplyTo());
     }
 
     public function testInvalidInputAnswersTheErrors(): void
@@ -143,7 +175,7 @@ class ContactForm extends MailForm
     #[Override]
     public function getSuccessMessage(): string
     {
-        return "Thank you, $this->name.";
+        return 'Thank you, ' . Html::encode($this->name) . '.';
     }
 }
 
@@ -156,19 +188,16 @@ class StubProtection implements ProtectionInterface
     {
     }
 
-    #[Override]
     public function verify(Request $request): bool
     {
         return ($this->isHuman)();
     }
 
-    #[Override]
     public function render(): string
     {
         return '';
     }
 
-    #[Override]
     public function getConsentService(): ?Service
     {
         return null;

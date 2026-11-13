@@ -10,7 +10,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Helpers\Html;
 use Hirtz\Skeleton\Web\Request;
-use Override;
+use SensitiveParameter;
 use Yii;
 
 class Turnstile implements ProtectionInterface
@@ -20,12 +20,11 @@ class Turnstile implements ProtectionInterface
 
     public function __construct(
         public readonly string $siteKey,
-        #[\SensitiveParameter] private readonly string $secretKey,
+        #[SensitiveParameter] private readonly string $secretKey,
         private ?ClientInterface $client = null,
     ) {
     }
 
-    #[Override]
     public function verify(Request $request): bool
     {
         $response = $request->post(self::RESPONSE_PARAM);
@@ -58,7 +57,6 @@ class Turnstile implements ProtectionInterface
         return true;
     }
 
-    #[Override]
     public function render(): string
     {
         return Html::tag('div', '', [
@@ -67,7 +65,6 @@ class Turnstile implements ProtectionInterface
         ]);
     }
 
-    #[Override]
     public function getConsentService(): ?Service
     {
         return Service::make()

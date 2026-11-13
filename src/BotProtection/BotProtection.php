@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Hirtz\Forms\BotProtection;
 
 use Closure;
+use Hirtz\Forms\Helpers\Param;
 use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Web\Request;
 use Yii;
@@ -13,16 +14,11 @@ use yii\base\Component;
 class BotProtection extends Component
 {
     /**
-     * A closure, so that a project's list replaces the bundle's instead of being appended to it.
+     * Built from params when `null`.
      *
-     * @var Closure(): list<ProtectionInterface>|list<ProtectionInterface>
+     * @var Closure(): list<ProtectionInterface>|list<ProtectionInterface>|null
      */
-    public Closure|array $protections = [];
-
-    /**
-     * @var list<ProtectionInterface>|null
-     */
-    private ?array $resolvedProtections = null;
+    public Closure|array|null $protections = null;
 
     public static function current(): self
     {
@@ -36,9 +32,31 @@ class BotProtection extends Component
      */
     public function getProtections(): array
     {
-        return $this->resolvedProtections ??= $this->protections instanceof Closure
-            ? ($this->protections)()
-            : $this->protections;
+        if ($this->protections instanceof Closure) {
+            $this->protections = ($this->protections)();
+        }
+
+        return $this->protections ??= $this->getDefaultProtections();
+    }
+
+    /**
+     * @return list<ProtectionInterface>
+     */
+    protected function getDefaultProtections(): array
+    {
+        $protections = [
+            Yii::createObject(Honeypot::class),
+            Yii::createObject(RateLimit::class),
+        ];
+
+        $siteKey = Param::getString('cfTurnstileSiteKey');
+        $secretKey = Param::getString('cfTurnstileSecretKey');
+
+        if ($siteKey !== null && $secretKey !== null) {
+            $protections[] = Yii::createObject(Turnstile::class, [$siteKey, $secretKey]);
+        }
+
+        return $protections;
     }
 
     public function verify(Request $request): bool

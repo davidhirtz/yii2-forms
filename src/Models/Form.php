@@ -16,6 +16,9 @@ abstract class Form extends Model
 
     abstract public function submit(): bool;
 
+    /**
+     * HTML: encode what the visitor entered.
+     */
     abstract public function getSuccessMessage(): string;
 
     public function requiresTerms(): bool

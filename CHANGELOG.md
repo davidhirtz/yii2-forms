@@ -1,3 +1,11 @@
+## Unreleased
+
+- `BotProtection::getDefaultProtections()` and `Newsletter::getDefaultProvider()` replace the closures in `Bootstrap`
+- Added `BotProtection\RateLimit`, in the default protections
+- Added `Honeypot::$maxSeconds`
+- `MailForm::$to`, `$from`, `$subject` and `$viewFile` are no longer attributes
+- Mailchimp adds members instead of updating existing ones
+
 ## 3.1.0 (November 13, 2026)
 
 - Mailchimp newsletter provider, wired from params; a list per language

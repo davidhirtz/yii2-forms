@@ -7,12 +7,11 @@ namespace Hirtz\Forms\BotProtection;
 use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Helpers\Html;
 use Hirtz\Skeleton\Web\Request;
-use Override;
 use Yii;
 
 /**
- * A field that must stay empty and a signed render time a submit must not follow too closely. On a page-cached form
- * the time is the cache's, so the delay only holds back a bot that renders the form itself.
+ * On a page-cached form the render time is the cache's: `minSeconds` only holds back a bot that renders the form
+ * itself, and `maxSeconds` must outlast the page cache.
  */
 class Honeypot implements ProtectionInterface
 {
@@ -20,10 +19,10 @@ class Honeypot implements ProtectionInterface
         public string $fieldName = 'website',
         public string $timeName = 'rendered',
         public int $minSeconds = 3,
+        public ?int $maxSeconds = null,
     ) {
     }
 
-    #[Override]
     public function verify(Request $request): bool
     {
         if ($request->post($this->fieldName, '') !== '') {
@@ -33,10 +32,14 @@ class Honeypot implements ProtectionInterface
         $time = $request->post($this->timeName);
         $time = is_string($time) ? Yii::$app->getSecurity()->validateData($time, $this->getKey($request)) : false;
 
-        return $time !== false && ctype_digit($time) && time() - (int)$time >= $this->minSeconds;
+        if ($time === false || !ctype_digit($time)) {
+            return false;
+        }
+
+        $age = time() - (int)$time;
+        return $age >= $this->minSeconds && ($this->maxSeconds === null || $age <= $this->maxSeconds);
     }
 
-    #[Override]
     public function render(): string
     {
         $request = Request::current();
@@ -48,7 +51,6 @@ class Honeypot implements ProtectionInterface
             . '</div>';
     }
 
-    #[Override]
     public function getConsentService(): ?Service
     {
         return null;

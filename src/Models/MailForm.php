@@ -4,25 +4,19 @@ declare(strict_types=1);
 
 namespace Hirtz\Forms\Models;
 
+use Hirtz\Forms\Helpers\Param;
 use Override;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\validators\EmailValidator;
 
-/**
- * Sends the form to `to` through the project's mail view, which receives the form as `$form`.
- */
 abstract class MailForm extends Form
 {
     /**
-     * Defaults to `params.formEmail`, then `params.email`; a string may list several, separated by commas.
-     *
      * @var list<string>|string|null
      */
     public array|string|null $to = null;
 
-    /**
-     * Defaults to `params.email`.
-     */
     public ?string $from = null;
 
     public ?string $subject = null;
@@ -32,12 +26,19 @@ abstract class MailForm extends Form
     #[Override]
     public function init(): void
     {
-        $params = Yii::$app->params;
-
-        $this->to ??= $this->getParam($params, 'formEmail') ?? $this->getParam($params, 'email');
-        $this->from ??= $this->getParam($params, 'email');
+        $this->to ??= Param::getString('formEmail') ?? Param::getString('email');
+        $this->from ??= Param::getString('email');
 
         parent::init();
+    }
+
+    /**
+     * The mail settings are properties, never attributes a post could load or a view list.
+     */
+    #[Override]
+    public function attributes(): array
+    {
+        return array_values(array_diff(parent::attributes(), ['to', 'from', 'subject', 'viewFile']));
     }
 
     #[Override]
@@ -73,21 +74,9 @@ abstract class MailForm extends Form
         return array_values(array_filter(array_map(trim(...), $to)));
     }
 
-    /**
-     * The visitor's address, so a reply reaches them.
-     */
     public function getReplyTo(): ?string
     {
         $email = $this->getAttributes(['email'])['email'] ?? null;
-        return is_string($email) && $email !== '' && !$this->hasErrors('email') ? $email : null;
-    }
-
-    /**
-     * @param array<array-key, mixed> $params
-     */
-    private function getParam(array $params, string $name): ?string
-    {
-        $value = $params[$name] ?? null;
-        return is_string($value) && $value !== '' ? $value : null;
+        return is_string($email) && (new EmailValidator())->validate($email) ? $email : null;
     }
 }

@@ -6,6 +6,7 @@ namespace Hirtz\Forms\Tests\BotProtection;
 
 use Hirtz\Forms\BotProtection\Honeypot;
 use Hirtz\Skeleton\Test\TestCase;
+use Yii;
 
 class HoneypotTest extends TestCase
 {
@@ -30,6 +31,15 @@ class HoneypotTest extends TestCase
     {
         $honeypot = new Honeypot(minSeconds: 60);
         $this->post($this->getRenderedFields($honeypot));
+
+        self::assertFalse($honeypot->verify($this->getWebRequest()));
+    }
+
+    public function testAnExpiredTimeFails(): void
+    {
+        $honeypot = new Honeypot(minSeconds: 0, maxSeconds: 60);
+        $time = Yii::$app->getSecurity()->hashData((string)(time() - 61), $this->getWebRequest()->cookieValidationKey . Honeypot::class);
+        $this->post(['website' => '', 'rendered' => $time]);
 
         self::assertFalse($honeypot->verify($this->getWebRequest()));
     }

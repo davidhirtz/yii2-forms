@@ -18,8 +18,6 @@ use yii\filters\VerbFilter;
 class FormController extends Controller
 {
     /**
-     * Action ids to the form each one submits.
-     *
      * @var array<string, class-string<Form>|array{class: class-string<Form>}>
      */
     public array $forms = [];

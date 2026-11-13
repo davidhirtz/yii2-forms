@@ -1,6 +1,3 @@
-/**
- * Submits a `form[data-action]` with `fetch()` and shows the answer of the bundle's `SubmitAction`.
- */
 export type Fields = Record<string, string>;
 
 export interface FormChallenge {

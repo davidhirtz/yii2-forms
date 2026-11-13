@@ -29,7 +29,7 @@ class NewsletterFormTest extends TestCase
 
         $this->provider = new NewsletterStubProvider();
 
-        Yii::$app->set('botProtection', ['class' => BotProtection::class]);
+        Yii::$app->set('botProtection', ['class' => BotProtection::class, 'protections' => []]);
         Yii::$app->set('newsletter', ['class' => Newsletter::class, 'provider' => fn (): ?ProviderInterface => $this->isEnabled ? $this->provider : null]);
 
         $_SERVER['REQUEST_METHOD'] = 'POST';
@@ -110,7 +110,6 @@ class NewsletterStubProvider implements ProviderInterface
     public ?Subscription $subscription = null;
     public ?NewsletterException $exception = null;
 
-    #[Override]
     public function subscribe(Subscription $subscription): void
     {
         $this->subscription = $subscription;

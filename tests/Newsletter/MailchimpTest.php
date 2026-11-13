@@ -10,6 +10,7 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Request as Psr7Request;
 use GuzzleHttp\Psr7\Response;
+use Hirtz\Forms\Newsletter\AlreadySubscribedException;
 use Hirtz\Forms\Newsletter\Mailchimp;
 use Hirtz\Forms\Newsletter\NewsletterException;
 use Hirtz\Forms\Newsletter\Subscription;
@@ -21,7 +22,7 @@ class MailchimpTest extends TestCase
 {
     private ?RequestInterface $lastRequest = null;
 
-    public function testASubscriptionPutsAPendingMember(): void
+    public function testASubscriptionPostsAPendingMember(): void
     {
         $this->createMailchimp(new Response(200))->subscribe(new Subscription(
             'Åsa@Example.com',
@@ -32,13 +33,13 @@ class MailchimpTest extends TestCase
 
         $request = $this->lastRequest ?? self::fail('No request.');
 
-        self::assertSame('PUT', $request->getMethod());
-        self::assertSame('https://us21.api.mailchimp.com/3.0/lists/list-1/members/' . md5('åsa@example.com'), (string)$request->getUri());
+        self::assertSame('POST', $request->getMethod());
+        self::assertSame('https://us21.api.mailchimp.com/3.0/lists/list-1/members', (string)$request->getUri());
         self::assertSame('Basic ' . base64_encode('anystring:key-us21'), $request->getHeaderLine('Authorization'));
 
         self::assertSame([
             'email_address' => 'Åsa@Example.com',
-            'status_if_new' => 'pending',
+            'status' => 'pending',
             'merge_fields' => ['FNAME' => 'Åsa', 'LNAME' => 'Ярослав 漢字 👋'],
             'ip_signup' => '127.0.0.1',
         ], json_decode((string)$request->getBody(), true));
@@ -49,7 +50,7 @@ class MailchimpTest extends TestCase
         $this->createMailchimp(new Response(200), ['doubleOptIn' => false])->subscribe(new Subscription('asa@example.com', 'de'));
 
         $body = json_decode((string)$this->lastRequest?->getBody(), true);
-        self::assertSame(['email_address' => 'asa@example.com', 'status_if_new' => 'subscribed'], $body);
+        self::assertSame(['email_address' => 'asa@example.com', 'status' => 'subscribed'], $body);
     }
 
     public function testTheListFollowsTheLanguage(): void
@@ -68,18 +69,29 @@ class MailchimpTest extends TestCase
         self::assertSame('us5.api.mailchimp.com', $this->lastRequest?->getUri()->getHost());
     }
 
-    public function testAnErrorNamesMailchimpsTitle(): void
+    public function testAnErrorNamesMailchimpsTitleButNotTheAddress(): void
     {
-        $mailchimp = $this->createMailchimp(new Response(400, [], '{"title":"Invalid Resource","status":400,"detail":"Please provide a valid email address."}'));
+        $mailchimp = $this->createMailchimp(new Response(400, [], '{"title":"Invalid Resource","status":400,"detail":"asa@example.com looks fake or invalid."}'));
 
-        $this->expectException(NewsletterException::class);
-        $this->expectExceptionMessage('Mailchimp answered 400: Invalid Resource Please provide a valid email address.');
+        try {
+            $mailchimp->subscribe(new Subscription('asa@example.com', 'de'));
+            self::fail('No exception.');
+        } catch (NewsletterException $exception) {
+            self::assertSame('Mailchimp answered 400: Invalid Resource', $exception->getMessage());
+        }
+    }
+
+    public function testAnExistingMemberIsAlreadySubscribed(): void
+    {
+        $mailchimp = $this->createMailchimp(new Response(400, [], '{"title":"Member Exists","status":400,"detail":"asa@example.com is already a list member."}'));
+
+        $this->expectException(AlreadySubscribedException::class);
         $mailchimp->subscribe(new Subscription('asa@example.com', 'de'));
     }
 
     public function testAnUnreachableMailchimpFails(): void
     {
-        $mailchimp = $this->createMailchimp(new ConnectException('Timeout', new Psr7Request('PUT', 'https://us21.api.mailchimp.com')));
+        $mailchimp = $this->createMailchimp(new ConnectException('Timeout', new Psr7Request('POST', 'https://us21.api.mailchimp.com')));
 
         $this->expectException(NewsletterException::class);
         $mailchimp->subscribe(new Subscription('asa@example.com', 'de'));

@@ -27,8 +27,6 @@ class Brevo extends BaseObject implements ProviderInterface
     public array $listIds = [];
 
     /**
-     * The double opt-in template, or one per language with the first as fallback.
-     *
      * @var int|array<string, int>
      */
     public int|array $templateId = 0;
@@ -50,7 +48,6 @@ class Brevo extends BaseObject implements ProviderInterface
         parent::init();
     }
 
-    #[Override]
     public function subscribe(Subscription $subscription): void
     {
         try {

@@ -36,7 +36,6 @@ class Webhook extends BaseObject implements ProviderInterface
         parent::init();
     }
 
-    #[Override]
     public function subscribe(Subscription $subscription): void
     {
         try {
