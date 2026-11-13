@@ -1,4 +1,4 @@
-## Unreleased
+## 3.1.0 (November 13, 2026)
 
 - Mailchimp newsletter provider, wired from params; a list per language
 
