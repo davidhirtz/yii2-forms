@@ -188,16 +188,19 @@ class StubProtection implements ProtectionInterface
     {
     }
 
+    #[Override]
     public function verify(Request $request): bool
     {
         return ($this->isHuman)();
     }
 
+    #[Override]
     public function render(): string
     {
         return '';
     }
 
+    #[Override]
     public function getConsentService(): ?Service
     {
         return null;

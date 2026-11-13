@@ -2,7 +2,7 @@
 
 - `BotProtection::getDefaultProtections()` and `Newsletter::getDefaultProvider()` replace the closures in `Bootstrap`
 - Added `BotProtection\RateLimit`, in the default protections
-- Added `Honeypot::$maxSeconds`
+- Added `Honeypot::$maxSeconds`, extended by the page and fragment caches around the form
 - `MailForm::$to`, `$from`, `$subject` and `$viewFile` are no longer attributes
 - Mailchimp adds members instead of updating existing ones
 

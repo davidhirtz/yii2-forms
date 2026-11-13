@@ -105,13 +105,14 @@ Without configuration the list is `Honeypot` and `RateLimit`, plus `Turnstile` w
 
 ```php
 'botProtection' => [
-    'protections' => [new Honeypot(minSeconds: 5, maxSeconds: 86400), new RateLimit(limit: 5)],
+    'protections' => [new Honeypot(minSeconds: 5), new RateLimit(limit: 5)],
 ],
 ```
 
 - `BotProtection\Honeypot`: a field that must stay empty (`website`, so no form may have a field of that name) and a
-  signed render time a submit must not follow within `minSeconds`, nor, when set, after `maxSeconds`. On a cached
-  page the time is the cache's, so `maxSeconds` must outlast the page cache. No third party.
+  signed render time a submit must not follow within `minSeconds`, nor after `maxSeconds` (two days) plus the
+  duration of every page or fragment cache around the form (none when one never expires; `null` for no limit). A
+  CDN or HTTP cache in front is not seen: raise `maxSeconds` by its lifetime. No third party.
 - `BotProtection\RateLimit`: `limit` submits per IP address (an IPv6 /64) within `duration` seconds, across all forms,
   counted in the `cache` component.
 - `BotProtection\Turnstile`: Cloudflare Turnstile, failing closed when Cloudflare cannot be reached. Registers its

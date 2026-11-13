@@ -7,6 +7,7 @@ namespace Hirtz\Forms\BotProtection;
 use Hirtz\Skeleton\Caching\CacheCounter;
 use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Web\Request;
+use Override;
 
 /**
  * Counts every submit that reaches it, per IP address and across all forms.
@@ -19,17 +20,20 @@ class RateLimit implements ProtectionInterface
     ) {
     }
 
+    #[Override]
     public function verify(Request $request): bool
     {
         $key = [self::class, $this->getOrigin((string)$request->getUserIP())];
         return CacheCounter::increment($key, $this->duration) <= $this->limit;
     }
 
+    #[Override]
     public function render(): string
     {
         return '';
     }
 
+    #[Override]
     public function getConsentService(): ?Service
     {
         return null;

@@ -41,6 +41,7 @@ class Mailchimp extends BaseObject implements ProviderInterface
         parent::init();
     }
 
+    #[Override]
     public function subscribe(Subscription $subscription): void
     {
         $listId = $this->getListId($subscription->language);

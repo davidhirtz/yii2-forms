@@ -110,6 +110,7 @@ class NewsletterStubProvider implements ProviderInterface
     public ?Subscription $subscription = null;
     public ?NewsletterException $exception = null;
 
+    #[Override]
     public function subscribe(Subscription $subscription): void
     {
         $this->subscription = $subscription;

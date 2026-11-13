@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Hirtz\Forms\Models;
 
-use Hirtz\Forms\Helpers\Param;
 use Override;
 use Yii;
 use yii\base\InvalidConfigException;
@@ -26,8 +25,8 @@ abstract class MailForm extends Form
     #[Override]
     public function init(): void
     {
-        $this->to ??= Param::getString('formEmail') ?? Param::getString('email');
-        $this->from ??= Param::getString('email');
+        $this->to ??= (Yii::$app->params['formEmail'] ?? null) ?: (Yii::$app->params['email'] ?? null);
+        $this->from ??= Yii::$app->params['email'] ?? null;
 
         parent::init();
     }

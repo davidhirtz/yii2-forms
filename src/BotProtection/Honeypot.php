@@ -6,12 +6,16 @@ namespace Hirtz\Forms\BotProtection;
 
 use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Helpers\Html;
+use Hirtz\Skeleton\Web\Application;
 use Hirtz\Skeleton\Web\Request;
+use Override;
 use Yii;
+use yii\filters\PageCache;
+use yii\widgets\FragmentCache;
 
 /**
  * On a page-cached form the render time is the cache's: `minSeconds` only holds back a bot that renders the form
- * itself, and `maxSeconds` must outlast the page cache.
+ * itself, and the token lives as long as the caches around the form plus `maxSeconds`.
  */
 class Honeypot implements ProtectionInterface
 {
@@ -19,41 +23,71 @@ class Honeypot implements ProtectionInterface
         public string $fieldName = 'website',
         public string $timeName = 'rendered',
         public int $minSeconds = 3,
-        public ?int $maxSeconds = null,
+        public ?int $maxSeconds = 172800,
     ) {
     }
 
+    #[Override]
     public function verify(Request $request): bool
     {
         if ($request->post($this->fieldName, '') !== '') {
             return false;
         }
 
-        $time = $request->post($this->timeName);
-        $time = is_string($time) ? Yii::$app->getSecurity()->validateData($time, $this->getKey($request)) : false;
+        $token = $request->post($this->timeName);
+        $token = is_string($token) ? Yii::$app->getSecurity()->validateData($token, $this->getKey($request)) : false;
 
-        if ($time === false || !ctype_digit($time)) {
+        // A token without a maximum was rendered before there was one
+        if ($token === false || !preg_match('/^(\d+)(?::(\d+))?\z/', $token, $matches)) {
             return false;
         }
 
-        $age = time() - (int)$time;
-        return $age >= $this->minSeconds && ($this->maxSeconds === null || $age <= $this->maxSeconds);
+        $age = time() - (int)$matches[1];
+        $maxAge = (int)($matches[2] ?? 0);
+
+        return $age >= $this->minSeconds && ($maxAge === 0 || $age <= $maxAge);
     }
 
+    #[Override]
     public function render(): string
     {
         $request = Request::current();
-        $time = $request ? Yii::$app->getSecurity()->hashData((string)time(), $this->getKey($request)) : '';
+        $token = $request ? Yii::$app->getSecurity()->hashData(time() . ':' . $this->getMaxAge(), $this->getKey($request)) : '';
 
         return '<div hidden aria-hidden="true">'
             . Html::input('text', $this->fieldName, '', ['tabindex' => '-1', 'autocomplete' => 'off'])
-            . Html::hiddenInput($this->timeName, $time)
+            . Html::hiddenInput($this->timeName, $token)
             . '</div>';
     }
 
+    #[Override]
     public function getConsentService(): ?Service
     {
         return null;
+    }
+
+    /**
+     * `0` for no limit.
+     */
+    protected function getMaxAge(): int
+    {
+        if (!$this->maxSeconds) {
+            return 0;
+        }
+
+        $maxAge = $this->maxSeconds;
+
+        foreach (Application::current()->getView()->getDynamicContents() as $cache) {
+            if ($cache instanceof PageCache || $cache instanceof FragmentCache) {
+                if ($cache->duration <= 0) {
+                    return 0;
+                }
+
+                $maxAge += $cache->duration;
+            }
+        }
+
+        return $maxAge;
     }
 
     private function getKey(Request $request): string

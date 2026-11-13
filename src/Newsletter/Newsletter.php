@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Hirtz\Forms\Newsletter;
 
 use Closure;
-use Hirtz\Forms\Helpers\Param;
 use Yii;
 use yii\base\Component;
 
@@ -38,35 +37,37 @@ class Newsletter extends Component
 
     protected function getDefaultProvider(): ?ProviderInterface
     {
-        $apiKey = Param::getString('brevoApiKey');
-        $listId = Param::getString('brevoListId');
-        $templateId = Yii::$app->params['brevoTemplateId'] ?? null;
+        $params = Yii::$app->params;
 
-        if ($apiKey !== null && $listId !== null && $templateId) {
+        $apiKey = $params['brevoApiKey'] ?? null;
+        $listId = $params['brevoListId'] ?? null;
+        $templateId = $params['brevoTemplateId'] ?? null;
+
+        if ($apiKey && $listId && $templateId) {
             return Yii::createObject([
                 'class' => Brevo::class,
-                'apiKey' => $apiKey,
-                'listIds' => array_map(intval(...), explode(',', $listId)),
+                'apiKey' => (string)$apiKey,
+                'listIds' => array_map(intval(...), explode(',', (string)$listId)),
                 'templateId' => is_array($templateId) ? array_map(intval(...), $templateId) : (int)$templateId,
             ]);
         }
 
-        $apiKey = Param::getString('mailchimpApiKey');
-        $listId = Param::getString('mailchimpListId') ?? $this->getMailchimpListIds();
+        $apiKey = $params['mailchimpApiKey'] ?? null;
+        $listId = ($params['mailchimpListId'] ?? null) ?: $this->getMailchimpListIds();
 
-        if ($apiKey !== null && $listId) {
+        if ($apiKey && $listId) {
             return Yii::createObject([
                 'class' => Mailchimp::class,
-                'apiKey' => $apiKey,
-                'listId' => $listId,
-                'server' => Param::getString('mailchimpServer'),
+                'apiKey' => (string)$apiKey,
+                'listId' => is_array($listId) ? $listId : (string)$listId,
+                'server' => ($params['mailchimpServer'] ?? null) ?: null,
             ]);
         }
 
-        if ($url = Param::getString('newsletterWebhookUrl')) {
+        if ($url = $params['newsletterWebhookUrl'] ?? null) {
             return Yii::createObject([
                 'class' => Webhook::class,
-                'url' => $url,
+                'url' => (string)$url,
             ]);
         }
 
@@ -83,8 +84,8 @@ class Newsletter extends Component
         $listIds = [];
 
         foreach (array_keys(Yii::$app->params) as $name) {
-            if (is_string($name) && str_starts_with($name, 'mailchimpListId_') && ($listId = Param::getString($name))) {
-                $listIds[substr($name, 16)] = $listId;
+            if (is_string($name) && str_starts_with($name, 'mailchimpListId_') && ($listId = Yii::$app->params[$name])) {
+                $listIds[substr($name, 16)] = (string)$listId;
             }
         }
 

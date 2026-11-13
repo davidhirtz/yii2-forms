@@ -9,11 +9,13 @@ use Hirtz\Forms\Newsletter\Newsletter;
 use Hirtz\Skeleton\Base\ConfigBootstrapInterface;
 use Hirtz\Skeleton\Consent\Categories\RequiredCategory;
 use Hirtz\Skeleton\Consent\Service;
+use Override;
 use Yii;
 use yii\i18n\PhpMessageSource;
 
 class Bootstrap implements ConfigBootstrapInterface
 {
+    #[Override]
     public static function getDefaultConfig(): array
     {
         return [
@@ -50,6 +52,7 @@ class Bootstrap implements ConfigBootstrapInterface
         ];
     }
 
+    #[Override]
     public function bootstrap($app): void
     {
         Yii::setAlias('@forms', __DIR__);

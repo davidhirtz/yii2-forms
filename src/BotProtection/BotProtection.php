@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Hirtz\Forms\BotProtection;
 
 use Closure;
-use Hirtz\Forms\Helpers\Param;
 use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Web\Request;
 use Yii;
@@ -49,11 +48,11 @@ class BotProtection extends Component
             Yii::createObject(RateLimit::class),
         ];
 
-        $siteKey = Param::getString('cfTurnstileSiteKey');
-        $secretKey = Param::getString('cfTurnstileSecretKey');
+        $siteKey = Yii::$app->params['cfTurnstileSiteKey'] ?? null;
+        $secretKey = Yii::$app->params['cfTurnstileSecretKey'] ?? null;
 
-        if ($siteKey !== null && $secretKey !== null) {
-            $protections[] = Yii::createObject(Turnstile::class, [$siteKey, $secretKey]);
+        if ($siteKey && $secretKey) {
+            $protections[] = Yii::createObject(Turnstile::class, [(string)$siteKey, (string)$secretKey]);
         }
 
         return $protections;

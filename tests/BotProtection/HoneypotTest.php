@@ -6,7 +6,11 @@ namespace Hirtz\Forms\Tests\BotProtection;
 
 use Hirtz\Forms\BotProtection\Honeypot;
 use Hirtz\Skeleton\Test\TestCase;
+use Hirtz\Skeleton\Web\Application;
+use ReflectionClass;
 use Yii;
+use yii\filters\PageCache;
+use yii\widgets\FragmentCache;
 
 class HoneypotTest extends TestCase
 {
@@ -35,13 +39,46 @@ class HoneypotTest extends TestCase
         self::assertFalse($honeypot->verify($this->getWebRequest()));
     }
 
-    public function testAnExpiredTimeFails(): void
+    public function testATokenOlderThanItsMaximumFails(): void
     {
-        $honeypot = new Honeypot(minSeconds: 0, maxSeconds: 60);
-        $time = Yii::$app->getSecurity()->hashData((string)(time() - 61), $this->getWebRequest()->cookieValidationKey . Honeypot::class);
-        $this->post(['website' => '', 'rendered' => $time]);
+        $honeypot = new Honeypot(minSeconds: 0);
 
+        $this->post(['website' => '', 'rendered' => $this->sign((time() - 60) . ':61')]);
+        self::assertTrue($honeypot->verify($this->getWebRequest()));
+
+        $this->post(['website' => '', 'rendered' => $this->sign((time() - 62) . ':61')]);
         self::assertFalse($honeypot->verify($this->getWebRequest()));
+    }
+
+    public function testATokenWithoutMaximumNeverExpires(): void
+    {
+        $honeypot = new Honeypot(minSeconds: 0);
+
+        $this->post(['website' => '', 'rendered' => $this->sign((time() - 86400 * 365) . ':0')]);
+        self::assertTrue($honeypot->verify($this->getWebRequest()));
+
+        $this->post(['website' => '', 'rendered' => $this->sign((string)(time() - 86400 * 365))]);
+        self::assertTrue($honeypot->verify($this->getWebRequest()), 'A token from before the maximum.');
+    }
+
+    public function testTheMaximumAddsTheCachesAroundTheForm(): void
+    {
+        $view = Application::current()->getView();
+
+        self::assertSame(60, $this->getRenderedMaxAge(new Honeypot(maxSeconds: 60)));
+        self::assertSame(0, $this->getRenderedMaxAge(new Honeypot(maxSeconds: null)));
+
+        $view->pushDynamicContent(new PageCache(['duration' => 3600]));
+        $fragmentCache = (new ReflectionClass(FragmentCache::class))->newInstanceWithoutConstructor();
+        $fragmentCache->duration = 600;
+        $view->pushDynamicContent($fragmentCache);
+        self::assertSame(4260, $this->getRenderedMaxAge(new Honeypot(maxSeconds: 60)));
+        $view->popDynamicContent();
+        $view->popDynamicContent();
+
+        $view->pushDynamicContent(new PageCache(['duration' => 0]));
+        self::assertSame(0, $this->getRenderedMaxAge(new Honeypot(maxSeconds: 60)));
+        $view->popDynamicContent();
     }
 
     public function testAMissingOrTamperedTimeFails(): void
@@ -66,6 +103,24 @@ class HoneypotTest extends TestCase
         self::assertSame(1, preg_match('/name="rendered" value="([^"]+)"/', $html, $matches));
 
         return ['website' => '', 'rendered' => html_entity_decode($matches[1] ?? self::fail('No time rendered.'))];
+    }
+
+    private function getRenderedMaxAge(Honeypot $honeypot): int
+    {
+        $token = Yii::$app->getSecurity()->validateData($this->getRenderedFields($honeypot)['rendered'], $this->getKey());
+        self::assertIsString($token);
+
+        return (int)explode(':', $token)[1];
+    }
+
+    private function sign(string $data): string
+    {
+        return Yii::$app->getSecurity()->hashData($data, $this->getKey());
+    }
+
+    private function getKey(): string
+    {
+        return $this->getWebRequest()->cookieValidationKey . Honeypot::class;
     }
 
     /**
