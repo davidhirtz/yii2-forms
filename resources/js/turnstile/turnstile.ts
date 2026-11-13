@@ -5,6 +5,11 @@ const SCRIPT_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render
 const RESPONSE_PARAM = 'cf-turnstile-response';
 
 /**
+ * A widget that never calls back (an unauthorized domain, a blocked script) would keep the form busy for good.
+ */
+const TIMEOUT = 20000;
+
+/**
  * The part of Cloudflare's API used here, so a project needs no `@types/cloudflare-turnstile`.
  */
 interface TurnstileApi {
@@ -29,8 +34,16 @@ export const createWidget = ($form: HTMLFormElement, execution: 'render' | 'exec
     let widgetId: string | null | undefined;
     let token: string | undefined;
     let waiting: {resolve: (fields: Fields) => void; reject: (error: Error) => void} | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const stopTimer = () => {
+        clearTimeout(timer);
+        timer = undefined;
+    };
 
     const settle = (value: string | Error) => {
+        stopTimer();
+
         if (typeof value === 'string') {
             token = value;
             waiting?.resolve({[RESPONSE_PARAM]: value});
@@ -55,6 +68,9 @@ export const createWidget = ($form: HTMLFormElement, execution: 'render' | 'exec
                 'response-field': false,
                 callback: (value: string) => settle(value),
                 'error-callback': () => settle(new Error('Turnstile could not verify the visitor.')),
+                'timeout-callback': () => settle(new Error('Turnstile timed out waiting for the visitor.')),
+                'unsupported-callback': () => settle(new Error('Turnstile does not support this browser.')),
+                'before-interactive-callback': stopTimer,
                 'expired-callback': () => {
                     token = undefined;
                 },
@@ -73,9 +89,15 @@ export const createWidget = ($form: HTMLFormElement, execution: 'render' | 'exec
             }
 
             return load().then(() => new Promise<Fields>((resolve, reject) => {
-                waiting = {resolve, reject};
+                if (!widgetId) {
+                    reject(new Error('Turnstile could not render.'));
+                    return;
+                }
 
-                if (execution === 'execute' && widgetId) {
+                waiting = {resolve, reject};
+                timer = setTimeout(() => settle(new Error('Turnstile did not answer.')), TIMEOUT);
+
+                if (execution === 'execute') {
                     getTurnstile().execute(widgetId);
                 }
             }));

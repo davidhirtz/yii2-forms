@@ -77,6 +77,49 @@ describe('turnstile', () => {
         await expect(fields).rejects.toThrow('Turnstile could not verify the visitor.');
     });
 
+    it('rejects when Turnstile never answers, unless the visitor is being asked', async () => {
+        vi.useFakeTimers();
+
+        try {
+            const challenge = onSubmit()($form);
+            const fields = challenge.solve();
+            const rejection = expect(fields).rejects.toThrow('Turnstile did not answer.');
+
+            await vi.waitFor(() => expect(api.execute).toHaveBeenCalled());
+            vi.advanceTimersByTime(20000);
+            await rejection;
+
+            const interactive = challenge.solve();
+            await vi.waitFor(() => expect(api.execute).toHaveBeenCalledTimes(2));
+            (options!['before-interactive-callback'] as () => void)();
+            vi.advanceTimersByTime(60000);
+            issueToken('token-3');
+
+            await expect(interactive).resolves.toEqual({'cf-turnstile-response': 'token-3'});
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('rejects on a timed out challenge and an unsupported browser', async () => {
+        const challenge = onSubmit()($form);
+
+        for (const [callback, message] of [['timeout-callback', 'timed out'], ['unsupported-callback', 'does not support']]) {
+            const fields = challenge.solve();
+            await vi.waitFor(() => expect(options).toBeDefined());
+            await vi.waitFor(() => expect(api.execute).toHaveBeenCalled());
+            (options![callback] as () => void)();
+            await expect(fields).rejects.toThrow(message);
+            api.execute.mockClear();
+        }
+    });
+
+    it('rejects when the widget cannot render', async () => {
+        api.render.mockReturnValue(undefined);
+
+        await expect(onSubmit()($form).solve()).rejects.toThrow('Turnstile could not render.');
+    });
+
     it('solves to nothing for a form without a container', async () => {
         $form.querySelector('[data-turnstile]')!.remove();
 
