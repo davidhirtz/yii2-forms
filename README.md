@@ -48,6 +48,11 @@ class ContactForm extends MailForm
 }
 ```
 
+`Models\WebhookForm` posts its attributes as JSON, with `language`, `ip` and `url` (the page of the form), to
+`webhookUrl` (default `params.formWebhookUrl`), an automation such as Zoho Flow, Make, Zapier or n8n. A subclass
+renames or adds fields in `getWebhookData()`, or sends headers by overriding `getWebhook()`. Code of its own posts
+through `Webhooks\Webhook` (`post()`, throwing `WebhookException`).
+
 `Controllers\FormController` gets one action per form, POST only, behind the skeleton's `SameOriginFilter` instead of
 a CSRF token, so the page holding the form can be cached:
 

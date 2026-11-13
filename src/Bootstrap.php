@@ -46,6 +46,7 @@ class Bootstrap implements ConfigBootstrapInterface
             'sensitiveParams' => [
                 'brevoApiKey',
                 'cfTurnstileSecretKey',
+                'formWebhookUrl',
                 'mailchimpApiKey',
                 'newsletterWebhookUrl',
             ],
