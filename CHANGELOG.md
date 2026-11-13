@@ -1,4 +1,4 @@
-## Unreleased
+## 3.2.0 (November 13, 2026)
 
 - `BotProtection::getDefaultProtections()` and `Newsletter::getDefaultProvider()` replace the closures in `Bootstrap`
 - Added `BotProtection\RateLimit`, in the default protections
