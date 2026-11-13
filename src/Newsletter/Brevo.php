@@ -15,6 +15,8 @@ use yii\helpers\Url;
 
 class Brevo extends BaseObject implements ProviderInterface
 {
+    use LanguageMapTrait;
+
     private const string URL = 'https://api.brevo.com/v3/contacts/doubleOptinConfirmation';
 
     public string $apiKey = '';
@@ -83,11 +85,7 @@ class Brevo extends BaseObject implements ProviderInterface
 
     public function getTemplateId(string $language): int
     {
-        if (is_int($this->templateId)) {
-            return $this->templateId;
-        }
-
-        return $this->templateId[$language] ?? $this->templateId[array_key_first($this->templateId)];
+        return $this->getForLanguage($this->templateId, $language);
     }
 
     private function getClient(): ClientInterface

@@ -71,12 +71,16 @@ the newsletter is unavailable. A subclass adds fields and hands them to the prov
 'forms' => ['contact' => ContactForm::class, 'newsletter' => NewsletterForm::class],
 ```
 
-The provider comes from params:
+The provider comes from params, in this order:
 
 - `Newsletter\Brevo`, from `params.brevoApiKey`, `params.brevoListId` (comma-separated for several) and
   `params.brevoTemplateId` (or one per language, `['de' => 8, 'en-US' => 9]`): Brevo's double opt-in. The confirmation
   link leads to `redirectUrl`, the home page unless the container says otherwise:
   `'container' => ['definitions' => [Brevo::class => ['redirectUrl' => ['/cms/site/view', 'slug' => 'subscribed']]]]`.
+- `Newsletter\Mailchimp`, from `params.mailchimpApiKey` and `params.mailchimpListId` (or one per language,
+  `params.mailchimpListId_de`, `params.mailchimpListId_en`): the member is `pending` until it confirms Mailchimp's
+  double opt-in, unless the container sets `doubleOptIn` to `false`. The data center comes from the key's suffix or
+  `params.mailchimpServer`. The form's attributes become merge fields (`FNAME`).
 - `Newsletter\Webhook`, from `params.newsletterWebhookUrl`: posts `email`, `language`, `ip`, `url` (the page of the
   form) and the attributes as JSON to an automation (Zoho Flow, Make, Zapier, n8n), which runs the opt-in.
 

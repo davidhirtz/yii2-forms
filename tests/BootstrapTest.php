@@ -9,6 +9,7 @@ use Hirtz\Forms\BotProtection\Honeypot;
 use Hirtz\Forms\BotProtection\ProtectionInterface;
 use Hirtz\Forms\BotProtection\Turnstile;
 use Hirtz\Forms\Newsletter\Brevo;
+use Hirtz\Forms\Newsletter\Mailchimp;
 use Hirtz\Forms\Newsletter\Newsletter;
 use Hirtz\Forms\Newsletter\Webhook;
 use Hirtz\Skeleton\Consent\ConsentManager;
@@ -22,6 +23,7 @@ class BootstrapTest extends TestCase
     {
         self::assertContains('cfTurnstileSecretKey', Yii::$app->sensitiveParams);
         self::assertContains('brevoApiKey', Yii::$app->sensitiveParams);
+        self::assertContains('mailchimpApiKey', Yii::$app->sensitiveParams);
         self::assertContains('newsletterWebhookUrl', Yii::$app->sensitiveParams);
     }
 
@@ -48,6 +50,24 @@ class BootstrapTest extends TestCase
         self::assertSame([3, 5], $provider->listIds);
         self::assertSame(7, $provider->templateId);
         self::assertSame(['/subscribed'], $provider->redirectUrl);
+    }
+
+    public function testTheMailchimpParamsWireMailchimpWithAListPerLanguage(): void
+    {
+        $this->config['params'] = [
+            ...$this->config['params'] ?? [],
+            'mailchimpApiKey' => 'key-us21',
+            'mailchimpListId_de' => 'list-de',
+            'mailchimpListId_en' => 'list-en',
+            'newsletterWebhookUrl' => 'https://flow.example.com/webhook',
+        ];
+
+        $this->reloadApplication();
+
+        $provider = Newsletter::current()->getProvider();
+        self::assertInstanceOf(Mailchimp::class, $provider);
+        self::assertSame(['de' => 'list-de', 'en' => 'list-en'], $provider->listId);
+        self::assertSame('us21', $provider->server);
     }
 
     public function testTheWebhookParamWiresTheWebhook(): void

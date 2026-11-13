@@ -9,6 +9,7 @@ use Hirtz\Forms\BotProtection\Honeypot;
 use Hirtz\Forms\BotProtection\ProtectionInterface;
 use Hirtz\Forms\BotProtection\Turnstile;
 use Hirtz\Forms\Newsletter\Brevo;
+use Hirtz\Forms\Newsletter\Mailchimp;
 use Hirtz\Forms\Newsletter\Newsletter;
 use Hirtz\Forms\Newsletter\ProviderInterface;
 use Hirtz\Forms\Newsletter\Webhook;
@@ -54,6 +55,7 @@ class Bootstrap implements ConfigBootstrapInterface
             'sensitiveParams' => [
                 'brevoApiKey',
                 'cfTurnstileSecretKey',
+                'mailchimpApiKey',
                 'newsletterWebhookUrl',
             ],
         ];
@@ -97,6 +99,18 @@ class Bootstrap implements ConfigBootstrapInterface
             ]);
         }
 
+        $apiKey = self::getParam('mailchimpApiKey');
+        $listId = self::getParam('mailchimpListId') ?? self::getMailchimpListIds();
+
+        if ($apiKey !== null && $listId) {
+            return Yii::createObject([
+                'class' => Mailchimp::class,
+                'apiKey' => $apiKey,
+                'listId' => $listId,
+                'server' => self::getParam('mailchimpServer'),
+            ]);
+        }
+
         if ($url = self::getParam('newsletterWebhookUrl')) {
             return Yii::createObject([
                 'class' => Webhook::class,
@@ -105,6 +119,24 @@ class Bootstrap implements ConfigBootstrapInterface
         }
 
         return null;
+    }
+
+    /**
+     * `mailchimpListId_de`, `mailchimpListId_en` and so on, keyed by language.
+     *
+     * @return array<string, string>
+     */
+    private static function getMailchimpListIds(): array
+    {
+        $listIds = [];
+
+        foreach (array_keys(Yii::$app->params) as $name) {
+            if (is_string($name) && str_starts_with($name, 'mailchimpListId_') && ($listId = self::getParam($name))) {
+                $listIds[substr($name, 16)] = $listId;
+            }
+        }
+
+        return $listIds;
     }
 
     private static function getParam(string $name): ?string
