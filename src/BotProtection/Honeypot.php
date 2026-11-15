@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Hirtz\Forms\BotProtection;
 
 use Hirtz\Skeleton\Consent\Service;
-use Hirtz\Skeleton\Helpers\Html;
+use Hirtz\Skeleton\Html\Input;
+use Hirtz\Skeleton\Html\Div;
 use Hirtz\Skeleton\Web\Application;
 use Hirtz\Skeleton\Web\Request;
 use Override;
@@ -54,10 +55,21 @@ class Honeypot implements ProtectionInterface
         $request = Request::current();
         $token = $request ? Yii::$app->getSecurity()->hashData(time() . ':' . $this->getMaxAge(), $this->getKey($request)) : '';
 
-        return '<div hidden aria-hidden="true">'
-            . Html::input('text', $this->fieldName, '', ['tabindex' => '-1', 'autocomplete' => 'off'])
-            . Html::hiddenInput($this->timeName, $token)
-            . '</div>';
+        return Div::make()
+            ->attributes(['hidden' => true, 'aria-hidden' => 'true'])
+            ->content(
+                Input::make()
+                    ->type('text')
+                    ->name($this->fieldName)
+                    ->value('')
+                    ->attribute('tabindex', '-1')
+                    ->autocomplete('off'),
+                Input::make()
+                    ->type('hidden')
+                    ->name($this->timeName)
+                    ->value($token),
+            )
+            ->render();
     }
 
     #[Override]

@@ -8,7 +8,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use Hirtz\Skeleton\Consent\Service;
-use Hirtz\Skeleton\Helpers\Html;
+use Hirtz\Skeleton\Html\Div;
 use Hirtz\Skeleton\Web\Request;
 use Override;
 use SensitiveParameter;
@@ -62,10 +62,12 @@ class Turnstile implements ProtectionInterface
     #[Override]
     public function render(): string
     {
-        return Html::tag('div', '', [
-            'data-turnstile' => true,
-            'data-sitekey' => $this->siteKey,
-        ]);
+        return Div::make()
+            ->attributes([
+                'data-turnstile' => true,
+                'data-sitekey' => $this->siteKey,
+            ])
+            ->render();
     }
 
     #[Override]
