@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import form, {type FormChallenge} from '../js/form.ts';
+import form, {type Fields, type FormChallenge} from '../js/form.ts';
 
 describe('form', () => {
     let $form: HTMLFormElement;
@@ -9,7 +9,7 @@ describe('form', () => {
 
     const submit = async () => {
         $form.dispatchEvent(new Event('submit', {cancelable: true}));
-        await vi.waitFor(() => expect($form.inert).toBe(false));
+        await vi.waitFor(() => expect($form.dataset.state).not.toBe('busy'));
     };
 
     beforeEach(() => {
@@ -67,6 +67,34 @@ describe('form', () => {
 
         expect((fetchMock.mock.calls[0][1].body as FormData).get('cf-turnstile-response')).toBe('token');
         expect(challenge.reset).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the form interactive while the challenge waits for the visitor, and ignores a second submit', async () => {
+        let solve!: (fields: Fields) => void;
+        const challenge: FormChallenge = {
+            solve: vi.fn(() => new Promise<Fields>((resolve) => {
+                solve = resolve;
+            })),
+            reset: vi.fn(),
+        };
+
+        form(document, {challenge: () => challenge});
+        respond({status: 200, message: 'Sent'});
+
+        $form.dispatchEvent(new Event('submit', {cancelable: true}));
+        $form.dispatchEvent(new Event('submit', {cancelable: true}));
+
+        expect($form.dataset.state).toBe('busy');
+        expect($form.ariaBusy).toBe('true');
+        expect($form.inert).toBe(false);
+        expect(challenge.solve).toHaveBeenCalledOnce();
+
+        solve({'cf-turnstile-response': 'token'});
+        await vi.waitFor(() => expect($form.dataset.state).toBe('success'));
+
+        expect(fetchMock).toHaveBeenCalledOnce();
+        expect($form.inert).toBe(false);
+        expect($form.ariaBusy).toBeNull();
     });
 
     it('does not post when the challenge fails', async () => {

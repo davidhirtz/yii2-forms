@@ -139,7 +139,7 @@ form(document, {challenge: turnstile()});
 
 `form.ts` submits every `form[data-action]` and writes the answer into its `[data-message]` element (the success
 message as HTML, errors as text), sets `aria-invalid` on the fields named in the errors and `data-state` (`busy`,
-`success`, `error`) on the form; `onSuccess` and `onError` replace the output. A failed request shows
+`success`, `error`) on the form, with `aria-busy` while busy and `inert` while posting; `onSuccess` and `onError` replace the output. A failed request shows
 `data-error-message`. A challenge solves before the post and resets after the answer:
 
 - `turnstile/onSubmit.ts`: loads nothing until a valid submit, then runs Turnstile invisibly (it shows itself only

@@ -90,16 +90,19 @@ export default ($container: ParentNode, options: Options = {}) => {
         $form.addEventListener('submit', (event) => {
             event.preventDefault();
 
-            if ($form.inert) {
+            if ($form.dataset.state === 'busy') {
                 return;
             }
 
             clear();
             $form.dataset.state = 'busy';
-            $form.inert = true;
+            $form.ariaBusy = 'true';
 
+            // Inert only once solved: an interactive challenge renders inside the form and must stay clickable
             (challenge ? challenge.solve() : Promise.resolve({} as Fields))
                 .then((fields) => {
+                    $form.inert = true;
+
                     const body = new FormData($form);
                     Object.entries(fields).forEach(([name, value]) => body.set(name, value));
 
@@ -114,6 +117,7 @@ export default ($container: ParentNode, options: Options = {}) => {
                 .finally(() => {
                     challenge?.reset();
                     $form.inert = false;
+                    $form.ariaBusy = null;
                 });
         });
     });

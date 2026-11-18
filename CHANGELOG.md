@@ -1,3 +1,7 @@
+## Unreleased
+
+- `form.ts` makes the form inert only once the challenge is solved, so an interactive Turnstile stays clickable, and sets `aria-busy` while busy
+
 ## 3.2.0 (November 13, 2026)
 
 - `BotProtection::getDefaultProtections()` and `Newsletter::getDefaultProvider()` replace the closures in `Bootstrap`
