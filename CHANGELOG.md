@@ -1,4 +1,4 @@
-## Unreleased
+## 3.2.1 (November 18, 2026)
 
 - `form.ts` makes the form inert only once the challenge is solved, so an interactive Turnstile stays clickable, and sets `aria-busy` while busy
 
