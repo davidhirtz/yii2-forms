@@ -8,6 +8,7 @@ interface ProviderInterface
 {
     /**
      * @throws AlreadySubscribedException
+     * @throws RejectedAddressException
      * @throws NewsletterException
      */
     public function subscribe(Subscription $subscription): void;

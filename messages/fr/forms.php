@@ -12,6 +12,7 @@ return [
     'FORM_TERMS_ERROR' => 'Veuillez accepter la politique de confidentialité.',
     'NEWSLETTER_DISABLED_ERROR' => 'La newsletter n’est pas disponible pour le moment.',
     'NEWSLETTER_EMAIL_LABEL' => 'E-mail',
+    'NEWSLETTER_EMAIL_REJECTED_ERROR' => 'Cette adresse e-mail ne peut pas être inscrite. Veuillez en utiliser une autre.',
     'NEWSLETTER_SUBSCRIBE_ERROR' => 'L’inscription a échoué. Veuillez réessayer plus tard.',
     'NEWSLETTER_SUBSCRIBE_SUCCESS' => 'Merci ! Veuillez confirmer votre inscription grâce au lien de l’e-mail que nous venons de vous envoyer.',
 ];

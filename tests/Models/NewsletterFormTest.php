@@ -11,11 +11,13 @@ use Hirtz\Forms\Newsletter\AlreadySubscribedException;
 use Hirtz\Forms\Newsletter\Newsletter;
 use Hirtz\Forms\Newsletter\NewsletterException;
 use Hirtz\Forms\Newsletter\ProviderInterface;
+use Hirtz\Forms\Newsletter\RejectedAddressException;
 use Hirtz\Forms\Newsletter\Subscription;
 use Hirtz\Skeleton\Test\TestCase;
 use Hirtz\Skeleton\Web\Application;
 use Override;
 use Yii;
+use yii\log\Logger;
 
 class NewsletterFormTest extends TestCase
 {
@@ -65,6 +67,24 @@ class NewsletterFormTest extends TestCase
 
         self::assertSame(422, $data['status'] ?? null);
         self::assertSame([Yii::t('forms', 'NEWSLETTER_SUBSCRIBE_ERROR')], $data['errors'][''] ?? null);
+    }
+
+    public function testARejectedAddressIsAnEmailErrorAndAWarning(): void
+    {
+        $this->provider->exception = new RejectedAddressException('Mailchimp rejected the address: looks fake or invalid');
+        $this->logger->isRecording = true;
+
+        $data = $this->submit(['email' => 'asa@example.com', 'terms' => '1']);
+
+        self::assertSame(422, $data['status'] ?? null);
+        self::assertSame([Yii::t('forms', 'NEWSLETTER_EMAIL_REJECTED_ERROR')], $data['errors']['email'] ?? null);
+
+        $levels = array_column(array_filter(
+            $this->logger->messages,
+            fn (array $message): bool => $message[2] === NewsletterForm::class . '::submit',
+        ), 1);
+
+        self::assertSame([Logger::LEVEL_WARNING], $levels);
     }
 
     public function testWithoutAProviderTheNewsletterIsDisabled(): void

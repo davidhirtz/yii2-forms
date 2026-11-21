@@ -7,6 +7,7 @@ namespace Hirtz\Forms\Models;
 use Hirtz\Forms\Newsletter\AlreadySubscribedException;
 use Hirtz\Forms\Newsletter\Newsletter;
 use Hirtz\Forms\Newsletter\NewsletterException;
+use Hirtz\Forms\Newsletter\RejectedAddressException;
 use Hirtz\Forms\Newsletter\Subscription;
 use Hirtz\Skeleton\Web\Request;
 use Override;
@@ -55,6 +56,10 @@ class NewsletterForm extends Form
             $provider->subscribe($this->getSubscription());
         } catch (AlreadySubscribedException) {
             // Answers like a new subscription, so the form never reveals who is subscribed.
+        } catch (RejectedAddressException $exception) {
+            Yii::warning($exception->getMessage(), __METHOD__);
+            $this->addError('email', Yii::t('forms', 'NEWSLETTER_EMAIL_REJECTED_ERROR'));
+            return false;
         } catch (NewsletterException $exception) {
             Yii::error($exception->getMessage(), __METHOD__);
             $this->addError('', Yii::t('forms', 'NEWSLETTER_SUBSCRIBE_ERROR'));

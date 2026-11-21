@@ -12,6 +12,7 @@ return [
     'FORM_TERMS_ERROR' => 'Please accept the privacy policy.',
     'NEWSLETTER_DISABLED_ERROR' => 'The newsletter is not available at the moment.',
     'NEWSLETTER_EMAIL_LABEL' => 'Email',
+    'NEWSLETTER_EMAIL_REJECTED_ERROR' => 'This email address cannot be subscribed. Please use a different one.',
     'NEWSLETTER_SUBSCRIBE_ERROR' => 'The subscription failed. Please try again later.',
     'NEWSLETTER_SUBSCRIBE_SUCCESS' => 'Thank you! Please confirm your subscription with the link in the email we just sent you.',
 ];

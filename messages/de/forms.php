@@ -12,6 +12,7 @@ return [
     'FORM_TERMS_ERROR' => 'Bitte akzeptieren Sie die Datenschutzerklärung.',
     'NEWSLETTER_DISABLED_ERROR' => 'Der Newsletter ist im Moment nicht verfügbar.',
     'NEWSLETTER_EMAIL_LABEL' => 'E-Mail',
+    'NEWSLETTER_EMAIL_REJECTED_ERROR' => 'Diese E-Mail-Adresse kann nicht angemeldet werden. Bitte verwenden Sie eine andere.',
     'NEWSLETTER_SUBSCRIBE_ERROR' => 'Die Anmeldung ist fehlgeschlagen. Bitte versuchen Sie es später erneut.',
     'NEWSLETTER_SUBSCRIBE_SUCCESS' => 'Vielen Dank! Bitte bestätigen Sie Ihre Anmeldung mit dem Link in der E-Mail, die wir Ihnen soeben geschickt haben.',
 ];

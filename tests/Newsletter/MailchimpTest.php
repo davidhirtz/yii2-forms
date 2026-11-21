@@ -13,6 +13,7 @@ use GuzzleHttp\Psr7\Response;
 use Hirtz\Forms\Newsletter\AlreadySubscribedException;
 use Hirtz\Forms\Newsletter\Mailchimp;
 use Hirtz\Forms\Newsletter\NewsletterException;
+use Hirtz\Forms\Newsletter\RejectedAddressException;
 use Hirtz\Forms\Newsletter\Subscription;
 use Hirtz\Skeleton\Test\TestCase;
 use Psr\Http\Message\RequestInterface;
@@ -71,14 +72,35 @@ class MailchimpTest extends TestCase
 
     public function testAnErrorNamesMailchimpsTitleButNotTheAddress(): void
     {
-        $mailchimp = $this->createMailchimp(new Response(400, [], '{"title":"Invalid Resource","status":400,"detail":"asa@example.com looks fake or invalid."}'));
+        $mailchimp = $this->createMailchimp(new Response(400, [], '{"title":"Invalid Resource","status":400,"detail":"Your merge fields were invalid.","errors":[{"field":"FNAME"}]}'));
 
         try {
             $mailchimp->subscribe(new Subscription('asa@example.com', 'de'));
             self::fail('No exception.');
         } catch (NewsletterException $exception) {
+            self::assertNotInstanceOf(RejectedAddressException::class, $exception);
             self::assertSame('Mailchimp answered 400: Invalid Resource', $exception->getMessage());
         }
+    }
+
+    public function testAFakeLookingAddressIsRejectedWithoutNamingIt(): void
+    {
+        $mailchimp = $this->createMailchimp(new Response(400, [], '{"title":"Invalid Resource","status":400,"detail":"asa@example.com looks fake or invalid, please enter a real email address."}'));
+
+        try {
+            $mailchimp->subscribe(new Subscription('asa@example.com', 'de'));
+            self::fail('No exception.');
+        } catch (RejectedAddressException $exception) {
+            self::assertSame('Mailchimp rejected the address: looks fake or invalid', $exception->getMessage());
+        }
+    }
+
+    public function testAnAddressSignedUpTooOftenIsRejected(): void
+    {
+        $mailchimp = $this->createMailchimp(new Response(400, [], '{"title":"Invalid Resource","status":400,"detail":"asa@example.com has signed up to a lot of lists very recently; we\'re not allowing more signups for now"}'));
+
+        $this->expectException(RejectedAddressException::class);
+        $mailchimp->subscribe(new Subscription('asa@example.com', 'de'));
     }
 
     public function testAnExistingMemberIsAlreadySubscribed(): void

@@ -1,3 +1,7 @@
+## 3.2.2 (unreleased)
+
+- Added `Newsletter\RejectedAddressException`: Mailchimp's refusal of a fake-looking or list-bombed address is logged as a warning and answered on the email field
+
 ## 3.2.1 (November 18, 2026)
 
 - `form.ts` makes the form inert only once the challenge is solved, so an interactive Turnstile stays clickable, and sets `aria-busy` while busy

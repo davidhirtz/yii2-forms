@@ -16,6 +16,11 @@ class Mailchimp extends BaseObject implements ProviderInterface
 {
     use LanguageMapTrait;
 
+    private const array REJECTED_ADDRESS_DETAILS = [
+        'looks fake or invalid',
+        'signed up to a lot of lists very recently',
+    ];
+
     public string $apiKey = '';
 
     /**
@@ -67,6 +72,14 @@ class Mailchimp extends BaseObject implements ProviderInterface
 
             // Mailchimp's `detail` names the address, which stays out of the log
             $status = $exception->getResponse()?->getStatusCode() ?? 0;
+            $detail = is_array($data) && is_string($data['detail'] ?? null) ? $data['detail'] : '';
+
+            foreach (self::REJECTED_ADDRESS_DETAILS as $reason) {
+                if (str_contains($detail, $reason)) {
+                    throw new RejectedAddressException("Mailchimp rejected the address: $reason", previous: $exception);
+                }
+            }
+
             throw new NewsletterException("Mailchimp answered $status: $title", previous: $exception);
         } catch (GuzzleException $exception) {
             throw new NewsletterException('Mailchimp failed: ' . $exception->getMessage(), previous: $exception);
