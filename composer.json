@@ -12,6 +12,7 @@
   ],
   "require": {
     "php": "^8.3",
+    "altcha-org/altcha": "^2.4",
     "davidhirtz/yii2-skeleton": "^3.28",
     "guzzlehttp/guzzle": "^7.9"
   },

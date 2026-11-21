@@ -44,6 +44,7 @@ class Bootstrap implements ConfigBootstrapInterface
                 ],
             ],
             'sensitiveParams' => [
+                'altchaHmacKey',
                 'brevoApiKey',
                 'cfTurnstileSecretKey',
                 'formWebhookUrl',

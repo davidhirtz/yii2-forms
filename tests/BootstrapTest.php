@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hirtz\Forms\Tests;
 
+use Hirtz\Forms\BotProtection\Altcha;
 use Hirtz\Forms\BotProtection\BotProtection;
 use Hirtz\Forms\BotProtection\Honeypot;
 use Hirtz\Forms\BotProtection\ProtectionInterface;
@@ -17,11 +18,13 @@ use Hirtz\Skeleton\Consent\ConsentManager;
 use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Test\TestCase;
 use Yii;
+use yii\base\InvalidConfigException;
 
 class BootstrapTest extends TestCase
 {
     public function testTheSecretsAreSensitiveParams(): void
     {
+        self::assertContains('altchaHmacKey', Yii::$app->sensitiveParams);
         self::assertContains('cfTurnstileSecretKey', Yii::$app->sensitiveParams);
         self::assertContains('brevoApiKey', Yii::$app->sensitiveParams);
         self::assertContains('mailchimpApiKey', Yii::$app->sensitiveParams);
@@ -101,6 +104,34 @@ class BootstrapTest extends TestCase
 
         self::assertSame([Honeypot::class, RateLimit::class, Turnstile::class], $this->getProtectionClasses());
         self::assertSame(['Cookie settings', 'Cloudflare Turnstile'], $this->getRequiredServiceNames());
+    }
+
+    public function testTheAltchaParamWiresAltchaWithoutAConsentService(): void
+    {
+        $this->config['params'] = [
+            ...$this->config['params'] ?? [],
+            'altchaHmacKey' => 'hmac-key',
+        ];
+
+        $this->reloadApplication();
+
+        self::assertSame([Honeypot::class, RateLimit::class, Altcha::class], $this->getProtectionClasses());
+        self::assertSame(['Cookie settings'], $this->getRequiredServiceNames());
+    }
+
+    public function testTurnstileAndAltchaParamsTogetherAreAConfigurationError(): void
+    {
+        $this->config['params'] = [
+            ...$this->config['params'] ?? [],
+            'altchaHmacKey' => 'hmac-key',
+            'cfTurnstileSiteKey' => 'site-key',
+            'cfTurnstileSecretKey' => 'secret-key',
+        ];
+
+        $this->reloadApplication();
+
+        $this->expectException(InvalidConfigException::class);
+        BotProtection::current()->getProtections();
     }
 
     public function testAProjectReplacesTheProtections(): void

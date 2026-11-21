@@ -9,6 +9,7 @@ use Hirtz\Skeleton\Consent\Service;
 use Hirtz\Skeleton\Web\Request;
 use Yii;
 use yii\base\Component;
+use yii\base\InvalidConfigException;
 
 class BotProtection extends Component
 {
@@ -50,12 +51,37 @@ class BotProtection extends Component
 
         $siteKey = Yii::$app->params['cfTurnstileSiteKey'] ?? null;
         $secretKey = Yii::$app->params['cfTurnstileSecretKey'] ?? null;
+        $hmacKey = Yii::$app->params['altchaHmacKey'] ?? null;
+
+        if ($siteKey && $secretKey && $hmacKey) {
+            throw new InvalidConfigException('Turnstile and Altcha are both configured: set the params of one.');
+        }
 
         if ($siteKey && $secretKey) {
             $protections[] = Yii::createObject(Turnstile::class, [(string)$siteKey, (string)$secretKey]);
         }
 
+        if ($hmacKey) {
+            $protections[] = Yii::createObject(Altcha::class, [(string)$hmacKey]);
+        }
+
         return $protections;
+    }
+
+    /**
+     * @template T of ProtectionInterface
+     * @param class-string<T> $class
+     * @return T|null
+     */
+    public function findProtection(string $class): ?ProtectionInterface
+    {
+        foreach ($this->getProtections() as $protection) {
+            if ($protection instanceof $class) {
+                return $protection;
+            }
+        }
+
+        return null;
     }
 
     public function verify(Request $request): bool

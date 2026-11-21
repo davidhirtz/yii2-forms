@@ -1,5 +1,6 @@
-## 3.2.2 (unreleased)
+## 3.3.0 (unreleased)
 
+- Added `BotProtection\Altcha`, wired from `params.altchaHmacKey`, its challenge action and `altcha/onSubmit.ts` / `altcha/onFocus.ts`
 - Added `Newsletter\RejectedAddressException`: Mailchimp's refusal of a fake-looking or list-bombed address is logged as a warning and answered on the email field
 
 ## 3.2.1 (November 18, 2026)

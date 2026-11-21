@@ -105,7 +105,8 @@ A project replaces the provider (`false` turns the newsletter off); another serv
 
 `botProtection` checks every submit after the form's own rules pass; every protection in its list must agree.
 Without configuration the list is `Honeypot` and `RateLimit`, plus `Turnstile` when `params.cfTurnstileSiteKey` and
-`params.cfTurnstileSecretKey` are set. The form renders the protections' markup with
+`params.cfTurnstileSecretKey` are set, or `Altcha` when `params.altchaHmacKey` is (both at once is a configuration
+error). The form renders the protections' markup with
 `BotProtection::current()->render()`. A project replaces the list, or overrides `getDefaultProtections()`:
 
 ```php
@@ -122,13 +123,20 @@ Without configuration the list is `Honeypot` and `RateLimit`, plus `Turnstile` w
   counted in the `cache` component.
 - `BotProtection\Turnstile`: Cloudflare Turnstile, failing closed when Cloudflare cannot be reached. Registers its
   consent service.
+- `BotProtection\Altcha`: [ALTCHA](https://altcha.org) proof of work, where traffic must not leave the server. The
+  browser fetches a signed challenge from `FormController`'s `altcha` action (`challengeRoute`, `/form/altcha` by
+  default, so no form may take that id) and solves `minCounter` to `maxCounter` PBKDF2 derivations of `cost`
+  iterations, about a second on a laptop. A solution is refused after `expire` seconds (600) and a second time, its
+  challenge kept in the `cache` component until then. No third party, no cookie, no consent service. It only raises
+  the cost of every submit: it stops spam at scale, not a targeted attacker.
 
 Another mechanism implements `BotProtection\ProtectionInterface`.
 
 ## TypeScript
 
 `resources/js` is imported from the package in the project's build (a Vite alias to
-`vendor/davidhirtz/yii2-forms/resources/js`, say):
+`vendor/davidhirtz/yii2-forms/resources/js`, say); Altcha needs `altcha-lib` in the project's own `package.json`
+(`npm install altcha-lib`), bundled rather than loaded from a CDN:
 
 ```ts
 import form from '@forms/form.ts';
@@ -148,3 +156,9 @@ message as HTML, errors as text), sets `aria-invalid` on the fields named in the
 
 Both find the widget's container as `[data-turnstile]` inside the form and take Turnstile's render options
 (`turnstile({language: 'de', theme: 'light'})`), except the ones they set themselves.
+
+- `altcha/onSubmit.ts`: fetches and solves a challenge on a valid submit.
+- `altcha/onFocus.ts`: starts on the form's first `focusin` and again after every answer, so the solution is usually
+  ready by submit.
+
+Both find `[data-altcha]` inside the form and solve again when the solution is about to expire.

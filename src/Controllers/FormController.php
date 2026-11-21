@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Hirtz\Forms\Controllers;
 
+use Hirtz\Forms\Actions\ChallengeAction;
 use Hirtz\Forms\Actions\SubmitAction;
 use Hirtz\Forms\Models\Form;
 use Hirtz\Skeleton\Filters\SameOriginFilter;
@@ -48,6 +49,8 @@ class FormController extends Controller
                 'form' => $form,
             ];
         }
+
+        $actions['altcha'] = ChallengeAction::class;
 
         return $actions;
     }
